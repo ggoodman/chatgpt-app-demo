@@ -2,6 +2,8 @@
 
 This is a brief (but comprehensive) walkthrough of how I got my first test app running in ChatGPT's new App SDK using the [mcp-server-go](https://github.com/ggoodman/mcp-server-go) MCP Server SDK.
 
+![Goal end-state](https://github.com/user-attachments/assets/9a593f77-3449-44b5-8d17-24fd86e094be "View of working example")
+
 ## Create and configure an Auth0 tenant
 
 1. Go to https://manage.auth0.com and sign up or log in. In the tenant selector, choose to create a new tenant.
