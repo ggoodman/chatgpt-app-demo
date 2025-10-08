@@ -3,7 +3,7 @@ module github.com/ggoodman/chatgpt-app-demo
 go 1.25.1
 
 require (
-	github.com/ggoodman/mcp-server-go v0.7.7
+	github.com/ggoodman/mcp-server-go v0.8.0
 	github.com/joeshaw/envdecode v0.0.0-20200121155833-099f1fc765bd
 )
 

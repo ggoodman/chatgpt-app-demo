@@ -22,12 +22,8 @@ github.com/elnormous/contenttype v1.0.4 h1:FjmVNkvQOGqSX70yvocph7keC8DtmJaLzTTq6
 github.com/elnormous/contenttype v1.0.4/go.mod h1:5KTOW8m1kdX1dLMiUJeN9szzR2xkngiv2K+RVZwWBbI=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/ggoodman/mcp-server-go v0.7.5 h1:+0qUNwMXacj0Qkm45Q+sRYHtmAcWMyTdIOP0pUhtE30=
-github.com/ggoodman/mcp-server-go v0.7.5/go.mod h1:burgbhHm9w9KnKogSlN0arkrvVCnBsaDRmwZshKAVgo=
-github.com/ggoodman/mcp-server-go v0.7.6 h1:dsNy+A140fFH89nFQbCCbF+i8DSeikZKCca1ANqh8Yg=
-github.com/ggoodman/mcp-server-go v0.7.6/go.mod h1:burgbhHm9w9KnKogSlN0arkrvVCnBsaDRmwZshKAVgo=
-github.com/ggoodman/mcp-server-go v0.7.7 h1:UPigQFEgtQIq/7bXiXV/Fjcdzd7ABX3mDvVAtpWd7+M=
-github.com/ggoodman/mcp-server-go v0.7.7/go.mod h1:burgbhHm9w9KnKogSlN0arkrvVCnBsaDRmwZshKAVgo=
+github.com/ggoodman/mcp-server-go v0.8.0 h1:MBwJm8AeTo4uD380ouOqydw7uB83BfifrUFsnXXGRq4=
+github.com/ggoodman/mcp-server-go v0.8.0/go.mod h1:burgbhHm9w9KnKogSlN0arkrvVCnBsaDRmwZshKAVgo=
 github.com/go-jose/go-jose/v4 v4.0.5 h1:M6T8+mKZl/+fNNuFHvGIzDz7BTLQPIounk/b9dw3AaE=
 github.com/go-jose/go-jose/v4 v4.0.5/go.mod h1:s3P1lRrkT8igV8D9OjyL4WRyHvjB6a4JSllnOrmmBOA=
 github.com/golang-jwt/jwt/v5 v5.3.0 h1:pv4AsKCKKZuqlgs5sUmn4x8UlGa0kEVt/puTpKx9vvo=
