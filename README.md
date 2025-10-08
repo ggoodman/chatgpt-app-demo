@@ -1,3 +1,7 @@
+# ChatGPT App Walkthrough
+
+This is a brief (but comprehensive) walkthrough of how I got my first test app running in ChatGPT's new App SDK using the [mcp-server-go](https://github.com/ggoodman/mcp-server-go) MCP Server SDK.
+
 ## Create and configure an Auth0 tenant
 
 1. Go to https://manage.auth0.com and sign up or log in. In the tenant selector, choose to create a new tenant.
@@ -55,27 +59,136 @@ go get -u github.com/ggoodman/mcp-server-go
 
 ### Define your MCP server capabilities
 
+First, let's define our tools.
+
 ```go
-tools := mcpservice.NewToolsContainer(
-  // Add your tools here
-)
+	tools := mcpservice.NewToolsContainer(
+		mcpservice.NewToolWithOutput("test_123", test123,
+			mcpservice.WithToolDescription("Use this tool when the user asks you to test the ChatGPT App."),
+      // These annotations are part of the contract for displaying UI in ChatGPT
+			mcpservice.WithToolMeta(map[string]any{
+				"openai/outputTemplate":          "ui://widget/form.v1.html",
+				"openai/toolInvocation/invoking": "Displaying the tester tool.",
+				"openai/toolInvocation/invoked":  "Displayed the tester tool.",
+			}),
+		),
+	)
+```
 
-// Use string concatenation to safely include fenced code block without confusing the Go parser.
-detailedInstructions := `<TODO>`
+Next, the resources (notably the UI widget we want to display).
 
-return mcpservice.NewServer(
-  mcpservice.WithServerInfo(
-    mcpservice.StaticServerInfo("Example ChatGPT App", "0.0.1", mcpservice.WithServerInfoTitle("Example ChatGPT App")),
-  ),
-  mcpservice.WithProtocolVersion(mcpservice.StaticProtocolVersion("2025-06-18")),
-  mcpservice.WithInstructions(mcpservice.StaticInstructions(detailedInstructions)),
-  mcpservice.WithToolsCapability(tools),
-)
+```go
+	resources := mcpservice.NewResourcesContainer()
+	resources.AddResource(mcpservice.TextResource("ui://widget/form.v1.html", `
+<div>
+	<style type="text/css">
+		html, body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+			padding: 0;
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+		}
+		form {
+			background-color: #f5f5f5;
+			display: flex;
+			flex-direction: column;
+
+			fieldset {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5em;
+				padding: 0.5em 1em;
+
+				label {
+					display: flex;
+					flex-direction: row;
+					gap: 0.5em;
+
+					input {
+						flex: 1 0 auto;
+					}
+				}
+
+				button {
+					display: block;
+				}
+			}
+		}
+	</style>
+	<form>
+		<fieldset disabled>
+			<label>
+				<span>Input:</span>
+				<input type="text" id="input" placeholder="Enter input" style="width: 300px;">
+			</label>
+			<button type="submit" onclick="invokeTool()">Invoke Tool</button>
+		</fieldset>
+	</form>
+	<script type="module">
+		window.addEventListener("openai:set_globals", e => {
+			const toolOutput = window.openai?.toolOutput ?? { output: "" };
+
+			document.getElementById("input").value = toolOutput.output;
+		});
+	</script>
+</div>
+	`, mcpservice.WithName("Tester Tool UI"), mcpservice.WithMimeType("text/html+skybridge")))
+```
+
+And then we can combine these into an MCP 'Service':
+
+```go
+	// Use string concatenation to safely include fenced code block without confusing the Go parser.
+	detailedInstructions := `<TODO>`
+
+	return mcpservice.NewServer(
+		mcpservice.WithServerInfo(
+			mcpservice.StaticServerInfo("Example ChatGPT App", "0.0.1", mcpservice.WithServerInfoTitle("Example ChatGPT App")),
+		),
+		mcpservice.WithProtocolVersion(mcpservice.StaticProtocolVersion("2025-06-18")),
+		mcpservice.WithInstructions(mcpservice.StaticInstructions(detailedInstructions)),
+		mcpservice.WithToolsCapability(tools),
+		mcpservice.WithResourcesCapability(resources),
+	)
 ```
 
 ### Define your MCP tools
 
-TODO
+For now, we're only going to do the minimum to get this off the ground with a single tool that will display a form. This tool captures some input, transforms it and responds with structured output. The widget's JavaScript code will
+wait for the `
+
+```go
+type Test123Params struct {
+	// Define input parameters here
+	Input string `json:"input"`
+}
+
+type Test123Output struct {
+	// Define output structure here
+	Output string `json:"output"`
+}
+
+func test123(ctx context.Context, session sessions.Session, w mcpservice.ToolResponseWriterTyped[Test123Output], r *mcpservice.ToolRequest[Test123Params]) error {
+	args := r.Args()
+
+	o := Test123Output{
+		Output: "Test123 received input: " + args.Input,
+	}
+
+	w.SetStructured(o)
+
+	// ChatGPT's MCP client doesn't seem to like it if structured content is not accompanied by text content.
+	bytes, err := json.Marshal(o)
+	if err != nil {
+		w.SetError(true)
+		w.AppendText("error marshalling output: " + err.Error())
+	}
+	w.AppendText(string(bytes))
+
+	return nil
+}
+```
 
 ### Mount your MCP Service as an HTTP Handler
 
@@ -104,3 +217,44 @@ return streaminghttp.New(ctx, serverUrl, redisHost, srv, auth,
   streaminghttp.WithVerboseRequestLogging(true),
 )
 ```
+
+### Expose the MCP Service as part of an HTTP Server
+
+```go
+	mcpUrl := cfg.PublicUrl + "/mcp"
+
+	mcpHandler, err := mcp.NewMCPHandler(ctx, log, mcpUrl, cfg.AuthIssuerUrl, cfg.RedisUrl, "chatgptapp:")
+	if err != nil {
+		log.ErrorContext(ctx, "failed to create MCP handler", slog.String("err", err.Error()))
+		os.Exit(1)
+	}
+
+	// Create serve mux
+	mux := http.NewServeMux()
+
+	// Register MCP handler as fallback - handles /mcp and .well-known paths
+	mux.Handle("/", mcpHandler)
+
+	// Create server
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: mux,
+
+		// No timeouts, as requests may be long-lived
+		ReadTimeout:  0,
+		WriteTimeout: 0,
+		IdleTimeout:  0,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.InfoContext(ctx, "server started", slog.Int("port", cfg.Port))
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.ErrorContext(ctx, "error starting server", slog.Int("port", cfg.Port), slog.String("err", err.Error()))
+		}
+	}()
+```
+
+## Project hosting
+
+In my case, I used a domain that I own (`goodman.dev`) and exposed a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) to the service running on a port on my machine. I run `cloudflared` locally which helps me observe server logs and debug as I iterate. Running locally means that I can also trivially attach a debugger and use breakpoint debugging, if needed.
